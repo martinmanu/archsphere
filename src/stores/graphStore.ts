@@ -20,6 +20,7 @@ interface GraphState {
   selectedEdgeId: string | null
   pendingConnectionSourceId: string | null
   isDraggingNode: boolean
+  draggedNodeId: string | null
   viewMode: ViewMode
   toolMode: ToolMode
   activeLayerId: string
@@ -30,6 +31,7 @@ interface GraphState {
   selectEdge: (id: string | null) => void
   setPendingConnectionSource: (id: string | null) => void
   setDraggingNode: (isDraggingNode: boolean) => void
+  setDraggedNodeId: (id: string | null) => void
   setViewMode: (viewMode: ViewMode) => void
   setToolMode: (toolMode: ToolMode) => void
   setActiveLayer: (id: string) => void
@@ -41,6 +43,8 @@ interface GraphState {
   removeEdge: (edgeId: string) => void
   updateEdgeType: (edgeId: string, type: EdgeType) => void
   toggleNodeExpansion: (id: string) => void
+  moveNodeRelative: (id: string, dx: number, dy: number) => void
+  moveNodeLayer: (id: string, direction: 'front' | 'behind') => void
   getVisibleNodes: () => ArchNode[]
   getVisibleEdges: () => ArchEdge[]
   getNodeById: (id: string) => ArchNode | undefined
@@ -130,6 +134,7 @@ export const useGraphStore = create<GraphState>((set, get) => ({
   selectedEdgeId: null,
   pendingConnectionSourceId: null,
   isDraggingNode: false,
+  draggedNodeId: null,
   viewMode: 'diagram2d',
   toolMode: 'select',
   activeLayerId: 'services-layer',
@@ -149,6 +154,7 @@ export const useGraphStore = create<GraphState>((set, get) => ({
       selectedEdgeId: null,
       pendingConnectionSourceId: null,
       isDraggingNode: false,
+      draggedNodeId: null,
       viewMode: 'diagram2d',
       toolMode: 'select',
       activeLayerId: 'services-layer',
@@ -164,6 +170,8 @@ export const useGraphStore = create<GraphState>((set, get) => ({
   setPendingConnectionSource: (id) => set({ pendingConnectionSourceId: id }),
 
   setDraggingNode: (isDraggingNode) => set({ isDraggingNode }),
+
+  setDraggedNodeId: (id) => set({ draggedNodeId: id, isDraggingNode: !!id }),
 
   setViewMode: (viewMode) => set({ viewMode }),
 
@@ -331,6 +339,48 @@ export const useGraphStore = create<GraphState>((set, get) => ({
       expandedNodeIds: nextExpandedNodeIds,
       visibleNodeIds: deriveVisibleNodeIds(nodes, nextExpandedNodeIds, layers),
     })
+  },
+
+  moveNodeRelative: (id, dx, dy) => {
+    const { nodes, updateNodePosition } = get()
+    const node = nodes.get(id)
+    if (!node) return
+    updateNodePosition(id, {
+      x: Number((node.position.x + dx).toFixed(2)),
+      y: Number((node.position.y + dy).toFixed(2)),
+      z: node.position.z,
+    })
+  },
+
+  moveNodeLayer: (id, direction) => {
+    const { nodes, layers, expandedNodeIds } = get()
+    const node = nodes.get(id)
+    if (!node || !node.layerId) return
+
+    const sortedLayers = Array.from(layers.values()).sort((a, b) => a.z - b.z)
+    const currentIndex = sortedLayers.findIndex((l) => l.id === node.layerId)
+    if (currentIndex === -1) return
+
+    const nextIndex = direction === 'front' ? currentIndex - 1 : currentIndex + 1
+
+    if (nextIndex >= 0 && nextIndex < sortedLayers.length) {
+      const nextLayer = sortedLayers[nextIndex]
+      const nextNodes = new Map(nodes)
+      nextNodes.set(id, {
+        ...node,
+        layerId: nextLayer.id,
+        position: {
+          x: node.position.x,
+          y: node.position.y,
+          z: nextLayer.z,
+        },
+      })
+
+      set({
+        nodes: nextNodes,
+        visibleNodeIds: deriveVisibleNodeIds(nextNodes, expandedNodeIds, layers),
+      })
+    }
   },
 
   getVisibleNodes: () => {

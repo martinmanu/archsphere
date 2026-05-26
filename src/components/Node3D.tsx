@@ -3,6 +3,7 @@ import { ThreeEvent, useFrame } from '@react-three/fiber'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Plane, Vector3 } from 'three'
 import type { Group } from 'three'
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ChevronsDown, ChevronsUp } from 'lucide-react'
 import { useGraphStore } from '@/stores/graphStore'
 import type { ArchNode } from '@/types/graph'
 
@@ -138,30 +139,15 @@ function NodeShape({ node, isSelected }: { node: ArchNode; isSelected: boolean }
 
 export function Node3D({ node, isSelected, onClick, onDoubleClick }: Props) {
   const [isHovered, setIsHovered] = useState(false)
-  const [isDragging, setIsDragging] = useState(false)
   const groupRef = useRef<Group>(null)
-  const dragPlane = useMemo(() => new Plane(new Vector3(0, 0, 1), -node.position.z), [node.position.z])
-  const dragPoint = useRef(new Vector3())
   const labelOffset = useMemo(() => getLabelOffset(node.type), [node.type])
-  const updateNodePosition = useGraphStore((state) => state.updateNodePosition)
-  const setDraggingNode = useGraphStore((state) => state.setDraggingNode)
+  
+  const setDraggedNodeId = useGraphStore((state) => state.setDraggedNodeId)
+  const moveNodeRelative = useGraphStore((state) => state.moveNodeRelative)
+  const moveNodeLayer = useGraphStore((state) => state.moveNodeLayer)
+  const viewMode = useGraphStore((state) => state.viewMode)
   const toolMode = useGraphStore((state) => state.toolMode)
   const pendingConnectionSourceId = useGraphStore((state) => state.pendingConnectionSourceId)
-
-  useEffect(() => {
-    if (!isDragging) {
-      return undefined
-    }
-
-    const stopDragging = () => {
-      setIsDragging(false)
-      setDraggingNode(false)
-      document.body.style.cursor = 'default'
-    }
-
-    window.addEventListener('pointerup', stopDragging)
-    return () => window.removeEventListener('pointerup', stopDragging)
-  }, [isDragging, setDraggingNode])
 
   useFrame((_, delta) => {
     if (!groupRef.current) {
@@ -186,34 +172,8 @@ export function Node3D({ node, isSelected, onClick, onDoubleClick }: Props) {
       return
     }
 
-    setIsDragging(true)
-    setDraggingNode(true)
+    setDraggedNodeId(node.id)
     document.body.style.cursor = 'grabbing'
-    const target = event.target
-
-    if (target instanceof Element) {
-      target.setPointerCapture(event.pointerId)
-    }
-  }
-
-  const handlePointerMove = (event: ThreeEvent<PointerEvent>) => {
-    if (!isDragging) {
-      return
-    }
-
-    event.stopPropagation()
-
-    const hit = event.ray.intersectPlane(dragPlane, dragPoint.current)
-
-    if (!hit) {
-      return
-    }
-
-    updateNodePosition(node.id, {
-      x: Number(hit.x.toFixed(2)),
-      y: Number(hit.y.toFixed(2)),
-      z: node.position.z,
-    })
   }
 
   const handleDoubleClick = (event: ThreeEvent<MouseEvent>) => {
@@ -226,7 +186,6 @@ export function Node3D({ node, isSelected, onClick, onDoubleClick }: Props) {
       ref={groupRef}
       position={[node.position.x, node.position.y, node.position.z]}
       scale={0.001}
-      onPointerMove={handlePointerMove}
     >
       <group
         onClick={handleClick}
@@ -256,11 +215,94 @@ export function Node3D({ node, isSelected, onClick, onDoubleClick }: Props) {
       >
         {node.label}
       </Text>
+      
       <Html position={[0, labelOffset + 0.62, 0]} center distanceFactor={13}>
         <div className={`node-chip node-chip-${node.type}`}>
           <span>{node.type}</span>
         </div>
       </Html>
+
+      {isSelected && viewMode === 'layers3d' ? (
+        <Html position={[0, labelOffset + 1.35, 0]} center distanceFactor={13}>
+          <div className="pointer-events-auto flex flex-col items-center gap-1 p-1 rounded-lg border border-cyan-400/20 bg-slate-950/85 shadow-2xl backdrop-blur-md select-none animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center gap-1">
+              <button
+                className="grid h-6 w-6 place-items-center rounded bg-slate-900/60 border border-white/5 hover:border-cyan-400/40 text-slate-300 hover:text-white hover:bg-cyan-500/25 transition active:scale-95"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  moveNodeLayer(node.id, 'front')
+                }}
+                title="Move layer front"
+                type="button"
+              >
+                <ChevronsUp size={13} />
+              </button>
+
+              <button
+                className="grid h-6 w-6 place-items-center rounded bg-slate-900/60 border border-white/5 hover:border-cyan-400/40 text-slate-300 hover:text-white hover:bg-cyan-500/25 transition active:scale-95"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  moveNodeRelative(node.id, 0, 2)
+                }}
+                title="Move Up"
+                type="button"
+              >
+                <ArrowUp size={13} />
+              </button>
+
+              <button
+                className="grid h-6 w-6 place-items-center rounded bg-slate-900/60 border border-white/5 hover:border-cyan-400/40 text-slate-300 hover:text-white hover:bg-cyan-500/25 transition active:scale-95"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  moveNodeLayer(node.id, 'behind')
+                }}
+                title="Move layer behind"
+                type="button"
+              >
+                <ChevronsDown size={13} />
+              </button>
+            </div>
+
+            <div className="flex items-center gap-1">
+              <button
+                className="grid h-6 w-6 place-items-center rounded bg-slate-900/60 border border-white/5 hover:border-cyan-400/40 text-slate-300 hover:text-white hover:bg-cyan-500/25 transition active:scale-95"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  moveNodeRelative(node.id, -2, 0)
+                }}
+                title="Move Left"
+                type="button"
+              >
+                <ArrowLeft size={13} />
+              </button>
+
+              <button
+                className="grid h-6 w-6 place-items-center rounded bg-slate-900/60 border border-white/5 hover:border-cyan-400/40 text-slate-300 hover:text-white hover:bg-cyan-500/25 transition active:scale-95"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  moveNodeRelative(node.id, 0, -2)
+                }}
+                title="Move Down"
+                type="button"
+              >
+                <ArrowDown size={13} />
+              </button>
+
+              <button
+                className="grid h-6 w-6 place-items-center rounded bg-slate-900/60 border border-white/5 hover:border-cyan-400/40 text-slate-300 hover:text-white hover:bg-cyan-500/25 transition active:scale-95"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  moveNodeRelative(node.id, 2, 0)
+                }}
+                title="Move Right"
+                type="button"
+              >
+                <ArrowRight size={13} />
+              </button>
+            </div>
+          </div>
+        </Html>
+      ) : null}
     </group>
   )
 }

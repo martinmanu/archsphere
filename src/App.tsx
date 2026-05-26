@@ -2,6 +2,7 @@ import { Canvas3D } from '@/components/Canvas3D'
 import { CanvasDropTarget } from '@/components/CanvasDropTarget'
 import { CrossLayerHints } from '@/components/CrossLayerHints'
 import { EditorOverlay } from '@/components/EditorOverlay'
+import { GlobalDragHandler } from '@/components/GlobalDragHandler'
 import { GraphRenderer } from '@/components/GraphRenderer'
 import { LayerPlanes } from '@/components/LayerPlanes'
 import { SceneManager } from '@/components/SceneManager'
@@ -13,6 +14,7 @@ function App() {
       <Canvas3D>
         <SceneManager />
         <CanvasDropTarget />
+        <GlobalDragHandler />
         <LayerPlanes />
         <CrossLayerHints />
         <GraphRenderer />
