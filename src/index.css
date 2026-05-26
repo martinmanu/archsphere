@@ -1,0 +1,97 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background-color: #0f172a;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.node-chip {
+  border: 1px solid rgb(255 255 255 / 18%);
+  border-radius: 6px;
+  background: rgb(2 6 23 / 62%);
+  color: white;
+  font-size: 10px;
+  line-height: 1;
+  padding: 4px 7px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 24%);
+  backdrop-filter: blur(14px);
+}
+
+.node-chip-domain {
+  background: rgb(8 47 73 / 48%);
+}
+
+.node-chip-database {
+  background: rgb(6 78 59 / 54%);
+}
+
+.node-chip-queue {
+  background: rgb(120 53 15 / 54%);
+}
+
+.palette-icon {
+  display: grid;
+  height: 36px;
+  width: 36px;
+  place-items: center;
+  border-radius: 6px;
+  border: 1px solid rgb(255 255 255 / 12%);
+  color: white;
+}
+
+.palette-icon-domain {
+  background: rgb(56 189 248 / 18%);
+}
+
+.palette-icon-service,
+.palette-icon-api,
+.palette-icon-component {
+  background: rgb(167 139 250 / 18%);
+}
+
+.palette-icon-database,
+.palette-icon-cache {
+  background: rgb(16 185 129 / 18%);
+}
+
+.palette-icon-queue {
+  background: rgb(245 158 11 / 18%);
+}
+
+.palette-icon-external {
+  background: rgb(148 163 184 / 18%);
+}
+
+.layer-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 180px;
+  border: 1px solid rgb(255 255 255 / 14%);
+  border-radius: 999px;
+  background: rgb(2 6 23 / 68%);
+  color: rgb(226 232 240);
+  font-size: 10px;
+  line-height: 1;
+  padding: 5px 8px;
+  white-space: nowrap;
+  box-shadow: 0 10px 30px rgb(0 0 0 / 28%);
+  backdrop-filter: blur(14px);
+}
+
+.layer-hint-direction {
+  color: rgb(125 211 252);
+  font-weight: 700;
+  text-transform: uppercase;
+}
